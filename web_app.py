@@ -85,7 +85,7 @@ def silent_log(url, mode):
         except: pass
 
 # --- UI HEADER ---
-st.title("🚀 UltraDL Pro")
+st.title("🚀 Downloader")
 st.caption("Find direct download links for about anything. Take advantage of powerful engines.") # Inspired by description
 
 # --- UI BODY: THE SEARCH GROUP ---
@@ -112,29 +112,24 @@ with col2:
     url_input = st.text_input("", placeholder="Paste link e.g. https://youtube.com/watch?v=...", label_visibility="collapsed")
 
 # The search button centered below, mimicking the "startSearch()" trigger
-if st.button("INITIALIZE ENGINE"):
+if st.button("DOWNLOAD"): # Renamed as requested
     if not url_input:
         st.warning("⚠️ Please provide a URL.")
     else:
         silent_log(url_input, mode)
         
-        with st.status("⚡ Processing...", expanded=False) as status:
+        with st.status("⚡ Processing...", expanded=True) as status:
             file_path = run_downloader(url_input, mode)
             
             if file_path and os.path.exists(file_path):
-                status.update(label="✅ Ready for Device Transfer!", state="complete")
+                status.update(label="✅ Download Started!", state="complete")
                 
-                with open(file_path, "rb") as f:
-                    st.download_button(
-                        label=f"💾 SAVE {os.path.basename(file_path).upper()}",
-                        data=f.read(),
-                        file_name=os.path.basename(file_path),
-                        mime="application/octet-stream",
-                        use_container_width=True
-                    )
+                # TRIGGER THE AUTOMATIC DOWNLOAD HERE
+                trigger_auto_download(file_path)
+                
+                # Cleanup
                 os.remove(file_path)
             else:
                 status.update(label="❌ Engine Error", state="error")
-
 # --- FOOTER ---
 st.markdown("<br><br><center><small>Powered by yt-dlp | Bootstrap Dark Aesthetic</small></center>", unsafe_allow_html=True)
