@@ -1,120 +1,120 @@
 import streamlit as st
 import os
-import time
 from supabase import create_client
 from dl import run_downloader
 
 # --- 2026 ULTRA-UI CONFIG ---
 st.set_page_config(page_title="UltraDL Pro", page_icon="⚡", layout="centered")
 
-# Injection of High-End CSS
+# --- HIGH-END CSS OVERHAUL ---
 st.markdown("""
     <style>
-    /* Main Background */
-    .stApp {
-        background: radial-gradient(circle at top right, #1e1e2e, #000000);
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
+
+    html, body, [class*="css"]  {
+        font-family: 'Inter', sans-serif !important;
+        background-color: #000000;
     }
-    
-    /* Hide Streamlit Branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    
-    /* Glassmorphism Card */
-    div[data-testid="stVerticalBlock"] > div:has(input) {
-        background: rgba(255, 255, 255, 0.03);
-        padding: 2rem;
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
+
+    /* Force Two Rows on All Devices */
+    .custom-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 20px;
     }
 
     /* Input Styling */
     .stTextInput input {
-        background-color: rgba(0,0,0,0.5) !important;
-        border: 1px solid #444 !important;
+        background-color: #111 !important;
+        border: 2px solid #333 !important;
+        border-radius: 12px !important;
+        padding: 25px !important;
+        font-size: 18px !important;
         color: #fff !important;
-        font-size: 1.2rem !important;
-        height: 60px !important;
+    }
+    
+    .stTextInput input:focus {
+        border-color: #FF4B4B !important;
     }
 
-    /* Primary Button Transformation */
-    .stDownloadButton button {
-        background: linear-gradient(90deg, #FF4B4B 0%, #ff8080 100%) !important;
-        border: none !important;
-        color: white !important;
-        font-weight: 800 !important;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        height: 3.5em !important;
-        transition: all 0.3s ease;
-        box-shadow: 0px 10px 20px rgba(255, 75, 75, 0.3);
+    /* Selectbox (Mode) Styling */
+    .stSelectbox div[data-baseweb="select"] > div {
+        background-color: #111 !important;
+        border: 2px solid #333 !important;
+        border-radius: 12px !important;
+        height: 50px !important;
     }
-    .stDownloadButton button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0px 15px 25px rgba(255, 75, 75, 0.5);
+
+    /* The Massive 'One-Click' Action Button */
+    .stButton button, .stDownloadButton button {
+        width: 100% !important;
+        background: #FF4B4B !important;
+        border: none !important;
+        padding: 30px !important;
+        font-size: 20px !important;
+        font-weight: 800 !important;
+        border-radius: 15px !important;
+        box-shadow: 0 10px 30px rgba(255, 75, 75, 0.4) !important;
+        transition: 0.3s;
+    }
+
+    .stButton button:hover {
+        transform: scale(1.02);
+        box-shadow: 0 15px 40px rgba(255, 75, 75, 0.6) !important;
+    }
+
+    /* Status Box Styling */
+    div[data-testid="stStatusWidget"] {
+        background-color: #111 !important;
+        border: 1px solid #333 !important;
+        border-radius: 12px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- LOGIC ---
-SUPA_URL = os.environ.get("SUPABASE_URL", "")
-SUPA_KEY = os.environ.get("SUPABASE_KEY", "")
+# --- APP LOGIC ---
+st.markdown("<h1 style='text-align: center; font-weight: 800; letter-spacing: -1px;'>UltraDL Pro</h1>", unsafe_allow_html=True)
 
-def silent_log(url, mode):
-    if SUPA_URL and SUPA_KEY:
-        try:
-            supabase = create_client(SUPA_URL, SUPA_KEY)
-            supabase.table("download_logs").insert({"video_url": url, "download_mode": mode}).execute()
-        except: pass
+# Input Section (Two Fixed Rows)
+url_input = st.text_input("Link", placeholder="Paste URL and click Fetch", label_visibility="collapsed")
 
-# --- UI HEADER ---
-st.markdown("<h1 style='text-align: center; color: white;'>⚡ UltraDL Pro</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #888;'>Paste. Download. Done.</p>", unsafe_allow_html=True)
+mode_map = {
+    "🎬 High-Res Video": "default",
+    "🎵 MP3 Audio": "aud",
+    "📸 Thumbnail Only": "thum",
+    "📂 Full Playlist": "pl"
+}
+mode_label = st.selectbox("Mode", list(mode_map.keys()), label_visibility="collapsed")
+mode = mode_map[mode_label]
 
-# --- APP CORE ---
-# We use columns to put the Mode and Input on the same visual plane
-col1, col2 = st.columns([3, 1])
+st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
 
-with col1:
-    url_input = st.text_input("", placeholder="https://youtube.com/watch?v=...", label_visibility="collapsed")
-
-with col2:
-    mode_map = {
-        "🎬 Video": "default",
-        "📸 Thumb": "thum",
-        "🎵 Audio": "aud",
-        "📂 Playlist": "pl"
-    }
-    selected_label = st.selectbox("", list(mode_map.keys()), label_visibility="collapsed")
-    mode = mode_map[selected_label]
-
-# --- THE AUTO-ENGINE ---
-if url_input:
-    # Triggered immediately when URL is detected
-    silent_log(url_input, mode)
-    
-    with st.status("🚀 Fetching Media...", expanded=False) as status:
-        file_path = run_downloader(url_input, mode)
-        
-        if file_path and os.path.exists(file_path):
-            file_name = os.path.basename(file_path)
-            with open(file_path, "rb") as f:
-                file_bytes = f.read()
+# THE TRIGGER
+# Since we want to avoid 'Enter', we use a big "Fetch" button as the primary action.
+if st.button("🚀 FETCH MEDIA"):
+    if not url_input:
+        st.error("Missing URL")
+    else:
+        with st.status("⚡ Processing Engine...", expanded=False) as status:
+            # Download Logic
+            file_path = run_downloader(url_input, mode)
             
-            status.update(label="✅ Ready!", state="complete")
-            
-            # The Magic: The Save button appears automatically
-            st.download_button(
-                label=f"⬇️ SAVE {file_name.upper()}",
-                data=file_bytes,
-                file_name=file_name,
-                mime="application/octet-stream",
-                use_container_width=True,
-                on_click=lambda: os.remove(file_path) # Cleanup on click
-            )
-        else:
-            status.update(label="❌ Failed", state="error")
-            st.error("Engine couldn't grab that link. Try a different format.")
+            if file_path and os.path.exists(file_path):
+                status.update(label="✅ Ready", state="complete")
+                
+                with open(file_path, "rb") as f:
+                    # Instant Reveal of the Save Button
+                    st.download_button(
+                        label="⬇️ SAVE TO DEVICE",
+                        data=f.read(),
+                        file_name=os.path.basename(file_path),
+                        mime="application/octet-stream",
+                        use_container_width=True
+                    )
+                os.remove(file_path)
+            else:
+                status.update(label="❌ Error", state="error")
+                st.error("Link expired or unsupported.")
 
-# --- FOOTER ---
-st.markdown("<div style='margin-top: 100px; opacity: 0.3; text-align: center; font-size: 0.8rem;'>High-Fidelity Engine v2.6.4</div>", unsafe_allow_html=True)
+st.markdown("<center style='opacity: 0.5; margin-top: 50px;'><small>v2.0.26 | No Tracking | Pure Speed</small></center>", unsafe_allow_html=True)
