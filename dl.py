@@ -71,7 +71,6 @@ def run_downloader(url, mode="default"):
             subprocess.run(g_cmd)
 
     # --- CLEANUP ---
-    # Python makes moving files and deleting empty folders very fast
     for root, dirs, files in os.walk(FINAL_DIR, topdown=False):
         for name in files:
             source = os.path.join(root, name)
@@ -83,6 +82,13 @@ def run_downloader(url, mode="default"):
             if not os.listdir(dir_path):
                 os.rmdir(dir_path)
 
+    # NOW check for files after the loops are finished
+    downloaded_files = os.listdir(FINAL_DIR)
+    if downloaded_files:
+        print(f"✅ Done! Files are in {FINAL_DIR}")
+        return os.path.join(FINAL_DIR, downloaded_files[0])
+    
+    return None
     print(f"✅ Done! Files are in {FINAL_DIR}")
 
 if __name__ == "__main__":
