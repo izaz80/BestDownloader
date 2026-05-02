@@ -1,4 +1,4 @@
-Import streamlit as st
+import streamlit as st
 import os
 from supabase import create_client
 from dl import run_downloader
@@ -10,23 +10,47 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- CUSTOM CSS FOR 2026 UI ---
+# --- BOOTSTRAP-INSPIRED CUSTOM CSS ---
+# This mimics the high-contrast dark theme and the specific button/input styling
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; }
+    /* Dark Theme Background */
+    .stApp { background-color: #000000; color: #ffffff; }
+    
+    /* Centralized Container Padding */
+    .main .block-container { padding-top: 10rem; }
+    
+    /* Mimicking the "black-background white" search button */
     .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        height: 3em;
-        background-color: #FF4B4B;
-        color: white;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #ffffff;
+        border-radius: 0px 5px 5px 0px;
+        height: 3.1rem;
         font-weight: bold;
+        width: 100%;
     }
-    .stTextInput>div>div>input { border-radius: 10px; }
+    
+    /* Input field styling to match Bootstrap 3.3.6 defaults */
+    .stTextInput>div>div>input {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-radius: 5px 0px 0px 5px;
+        height: 3.1rem;
+    }
+    
+    /* Adjusting selectbox to look like the Category/Engine dropdowns */
+    .stSelectbox div[data-baseweb="select"] {
+        border-radius: 5px;
+        background-color: #333333;
+    }
+    
+    h1 { text-align: center; font-family: sans-serif; font-weight: bold; }
+    .stCaption { text-align: center; color: #aaaaaa; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SILENT TRACKING ---
+# --- BACKEND LOGIC ---
 SUPA_URL = os.environ.get("SUPABASE_URL", "")
 SUPA_KEY = os.environ.get("SUPABASE_KEY", "")
 
@@ -35,67 +59,59 @@ def silent_log(url, mode):
         try:
             supabase = create_client(SUPA_URL, SUPA_KEY)
             supabase.table("download_logs").insert({"video_url": url, "download_mode": mode}).execute()
-        except:
-            pass
+        except: pass
 
 # --- UI HEADER ---
 st.title("🚀 UltraDL Pro")
-st.caption("2026 Browser-First Media Engine | High-Fidelity Downloads")
+st.caption("Find direct download links for about anything. Take advantage of powerful engines.") # Inspired by description
 
-# --- UI BODY ---
-with st.container():
-    url_input = st.text_input("", placeholder="Paste your link here (YouTube, Instagram, etc.)")
-    
-    # Mapping your dl.py modes to user-friendly labels
+# --- UI BODY: THE SEARCH GROUP ---
+# The original UI uses a grid system (col-lg-8) to center the search bar
+col1, col2 = st.columns([1, 4])
+
+with col1:
+    # Mimics the "Category" dropdown (Software, Movies, Music, etc.)
     mode_map = {
-        "Video + Thumbnail": "default",
-        "Video (No Thumbnail)": "nothum",
-        "Thumbnail Only": "thum",
-        "Audio Only (MP3)": "aud",
-        "Full Playlist": "pl",
-        "Playlist (No Thumbnails)": "pl nothum",
-        "Playlist Thumbnails": "pl thum",
-        "Playlist Audio Only": "pl aud"
+        "🎥 Video": "default",
+        "🎬 No Thumb": "nothum",
+        "🖼️ Thumb Only": "thum",
+        "🎵 Audio Only": "aud",
+        "📂 Playlist": "pl",
+        "🎞️ Pl No Thumb": "pl nothum",
+        "📸 Pl Thumb": "pl thum",
+        "🎧 Pl Audio": "pl aud"
     }
-    
-    selected_label = st.selectbox("Download Quality & Mode", list(mode_map.keys()))
+    selected_label = st.selectbox("", list(mode_map.keys()), label_visibility="collapsed")
     mode = mode_map[selected_label]
 
-st.divider()
+with col2:
+    # Mimics the main search input field
+    url_input = st.text_input("", placeholder="Paste link e.g. https://youtube.com/watch?v=...", label_visibility="collapsed")
 
-if st.button("Initialize Engine"):
+# The search button centered below, mimicking the "startSearch()" trigger
+if st.button("INITIALIZE ENGINE"):
     if not url_input:
         st.warning("⚠️ Please provide a URL.")
     else:
-        # Step 1: Silent Log
         silent_log(url_input, mode)
         
-        # Step 2: Download on Server
-        with st.status("⚡ Processing...", expanded=True) as status:
-            st.write("Initializing yt-dlp/gallery-dl...")
+        with st.status("⚡ Processing...", expanded=False) as status:
             file_path = run_downloader(url_input, mode)
             
             if file_path and os.path.exists(file_path):
-                status.update(label="✅ Ready for Device Transfer!", state="complete", expanded=False)
+                status.update(label="✅ Ready for Device Transfer!", state="complete")
                 
-                # Step 3: Serve to User
                 with open(file_path, "rb") as f:
-                    file_bytes = f.read()
-                    file_name = os.path.basename(file_path)
-                    
                     st.download_button(
-                        label=f"💾 Save {file_name}",
-                        data=file_bytes,
-                        file_name=file_name,
+                        label=f"💾 SAVE {os.path.basename(file_path).upper()}",
+                        data=f.read(),
+                        file_name=os.path.basename(file_path),
                         mime="application/octet-stream",
                         use_container_width=True
                     )
-                
-                # Step 4: Server Cleanup
                 os.remove(file_path)
             else:
                 status.update(label="❌ Engine Error", state="error")
-                st.error("The file could not be generated. Check the link or try another mode.")
 
 # --- FOOTER ---
-st.markdown("<br><center><small>Powered by yt-dlp & gallery-dl | Ephemeral Cloud Storage</small></center>", unsafe_allow_html=True)
+st.markdown("<br><br><center><small>Powered by yt-dlp | Bootstrap Dark Aesthetic</small></center>", unsafe_allow_html=True)
