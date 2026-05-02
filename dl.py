@@ -81,14 +81,10 @@ def run_downloader(url, mode="default"):
     # --- THE FIX: RETURN THE PATH ---
     # Look for the file we just moved to FINAL_DIR
     downloaded_files = [f for f in os.listdir(FINAL_DIR) if os.path.isfile(os.path.join(FINAL_DIR, f))]
-    
     if downloaded_files:
-        # Sort by time to get the newest file
+        # Get the newest file
         downloaded_files.sort(key=lambda x: os.path.getmtime(os.path.join(FINAL_DIR, x)), reverse=True)
-        new_file_path = os.path.join(FINAL_DIR, downloaded_files[0])
-        print(f"✅ Found file for transfer: {new_file_path}")
-        return new_file_path  # This MUST return to web_app.py
-        
+        return os.path.join(FINAL_DIR, downloaded_files[0])
     return None
     
     print(f"✅ Done! Files are in {FINAL_DIR}")
