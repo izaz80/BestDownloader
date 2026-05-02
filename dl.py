@@ -70,25 +70,27 @@ def run_downloader(url, mode="default"):
             ]
             subprocess.run(g_cmd)
 
-    # --- CLEANUP ---
+    ## --- CLEANUP (Existing code) ---
     for root, dirs, files in os.walk(FINAL_DIR, topdown=False):
         for name in files:
             source = os.path.join(root, name)
             target = os.path.join(FINAL_DIR, name)
             if source != target:
                 os.replace(source, target)
-        for name in dirs:
-            dir_path = os.path.join(root, name)
-            if not os.listdir(dir_path):
-                os.rmdir(dir_path)
 
-    # NOW check for files after the loops are finished
-    downloaded_files = os.listdir(FINAL_DIR)
-    if downloaded_files:
-        print(f"✅ Done! Files are in {FINAL_DIR}")
-        return os.path.join(FINAL_DIR, downloaded_files[0])
+    # --- THE FIX: RETURN THE PATH ---
+    # Look for the file we just moved to FINAL_DIR
+    downloaded_files = [f for f in os.listdir(FINAL_DIR) if os.path.isfile(os.path.join(FINAL_DIR, f))]
     
+    if downloaded_files:
+        # Sort by time to get the newest file
+        downloaded_files.sort(key=lambda x: os.path.getmtime(os.path.join(FINAL_DIR, x)), reverse=True)
+        new_file_path = os.path.join(FINAL_DIR, downloaded_files[0])
+        print(f"✅ Found file for transfer: {new_file_path}")
+        return new_file_path  # This MUST return to web_app.py
+        
     return None
+    
     print(f"✅ Done! Files are in {FINAL_DIR}")
 
 if __name__ == "__main__":
