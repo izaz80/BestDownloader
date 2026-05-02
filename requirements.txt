@@ -1,0 +1,5 @@
+yt-dlp
+streamlit
+supabase
+gallery-dl
+supabase
