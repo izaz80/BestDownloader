@@ -4,61 +4,63 @@ import time
 from supabase import create_client
 from dl import run_downloader
 
-# --- PAGE CONFIG ---
+# --- 2026 ULTRA-UI CONFIG ---
 st.set_page_config(page_title="UltraDL Pro", page_icon="⚡", layout="centered")
 
-# --- 2026 NEON GLASSMORPHISM UI ---
+# Injection of High-End CSS
 st.markdown("""
     <style>
-    /* Main Background & Font */
-    .main { background: radial-gradient(circle at top left, #1a1a2e, #0f0f1b); color: #ffffff; }
-    
-    /* Input Styling */
-    .stTextInput>div>div>input {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
-        border-radius: 12px !important;
-        padding: 15px !important;
-        font-size: 1.1rem !important;
-    }
-
-    /* Modern Selectbox */
-    .stSelectbox [data-baseweb="select"] {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border-radius: 12px !important;
-    }
-
-    /* THE ONE-CLICK BUTTON */
-    div.stButton > button:first-child {
-        background: linear-gradient(90deg, #FF4B2B 0%, #FF416C 100%);
-        border: none;
-        color: white;
-        padding: 20px;
-        font-size: 20px;
-        font-weight: 700;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(255, 75, 75, 0.3);
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+    /* Main Background */
+    .stApp {
+        background: radial-gradient(circle at top right, #1e1e2e, #000000);
     }
     
-    div.stButton > button:first-child:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(255, 75, 75, 0.5);
-    }
-
     /* Hide Streamlit Branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    
+    /* Glassmorphism Card */
+    div[data-testid="stVerticalBlock"] > div:has(input) {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 2rem;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    /* Input Styling */
+    .stTextInput input {
+        background-color: rgba(0,0,0,0.5) !important;
+        border: 1px solid #444 !important;
+        color: #fff !important;
+        font-size: 1.2rem !important;
+        height: 60px !important;
+    }
+
+    /* Primary Button Transformation */
+    .stDownloadButton button {
+        background: linear-gradient(90deg, #FF4B4B 0%, #ff8080 100%) !important;
+        border: none !important;
+        color: white !important;
+        font-weight: 800 !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        height: 3.5em !important;
+        transition: all 0.3s ease;
+        box-shadow: 0px 10px 20px rgba(255, 75, 75, 0.3);
+    }
+    .stDownloadButton button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0px 15px 25px rgba(255, 75, 75, 0.5);
+    }
     </style>
     """, unsafe_allow_html=True)
 
 # --- LOGIC ---
+SUPA_URL = os.environ.get("SUPABASE_URL", "")
+SUPA_KEY = os.environ.get("SUPABASE_KEY", "")
+
 def silent_log(url, mode):
-    SUPA_URL = os.environ.get("SUPABASE_URL", "")
-    SUPA_KEY = os.environ.get("SUPABASE_KEY", "")
     if SUPA_URL and SUPA_KEY:
         try:
             supabase = create_client(SUPA_URL, SUPA_KEY)
@@ -66,57 +68,53 @@ def silent_log(url, mode):
         except: pass
 
 # --- UI HEADER ---
-st.markdown("<h1 style='text-align: center; margin-bottom: 0;'>⚡ UltraDL Pro</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #888; font-size: 0.9rem;'>Premium Media Extraction Engine</p>", unsafe_allow_html=True)
-st.write("---")
+st.markdown("<h1 style='text-align: center; color: white;'>⚡ UltraDL Pro</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #888;'>Paste. Download. Done.</p>", unsafe_allow_html=True)
 
-# --- UI BODY ---
-col1, col2 = st.columns([2, 1])
+# --- APP CORE ---
+# We use columns to put the Mode and Input on the same visual plane
+col1, col2 = st.columns([3, 1])
 
 with col1:
-    url_input = st.text_input("Source URL", placeholder="Paste link here...", label_visibility="collapsed")
+    url_input = st.text_input("", placeholder="https://youtube.com/watch?v=...", label_visibility="collapsed")
 
 with col2:
     mode_map = {
-        "🎬 Video + Meta": "default",
-        "🎥 Raw Video": "nothum",
-        "🖼️ Thumbnail": "thum",
-        "🎵 MP3 Audio": "aud",
+        "🎬 Video": "default",
+        "📸 Thumb": "thum",
+        "🎵 Audio": "aud",
         "📂 Playlist": "pl"
     }
-    selected_label = st.selectbox("Mode", list(mode_map.keys()), label_visibility="collapsed")
+    selected_label = st.selectbox("", list(mode_map.keys()), label_visibility="collapsed")
     mode = mode_map[selected_label]
 
-# Action Space
-main_btn_placeholder = st.empty()
-
-if main_btn_placeholder.button("⚡ GRAB MEDIA"):
-    if not url_input:
-        st.toast("⚠️ Drop a link first!", icon="🔥")
-    else:
-        silent_log(url_input, mode)
+# --- THE AUTO-ENGINE ---
+if url_input:
+    # Triggered immediately when URL is detected
+    silent_log(url_input, mode)
+    
+    with st.status("🚀 Fetching Media...", expanded=False) as status:
+        file_path = run_downloader(url_input, mode)
         
-        with st.status("🚀 Teleporting media...", expanded=False) as status:
-            file_path = run_downloader(url_input, mode)
+        if file_path and os.path.exists(file_path):
+            file_name = os.path.basename(file_path)
+            with open(file_path, "rb") as f:
+                file_bytes = f.read()
             
-            if file_path and os.path.exists(file_path):
-                status.update(label="✅ Ready!", state="complete")
-                
-                # We show the final Save button immediately in place of the old one
-                with open(file_path, "rb") as f:
-                    file_name = os.path.basename(file_path)
-                    st.download_button(
-                        label=f"⬇️ SAVE {file_name.upper()}",
-                        data=f.read(),
-                        file_name=file_name,
-                        mime="application/octet-stream",
-                        use_container_width=True,
-                        key="final_dl"
-                    )
-                os.remove(file_path)
-            else:
-                status.update(label="❌ Failed", state="error")
-                st.error("Link invalid or server busy.")
+            status.update(label="✅ Ready!", state="complete")
+            
+            # The Magic: The Save button appears automatically
+            st.download_button(
+                label=f"⬇️ SAVE {file_name.upper()}",
+                data=file_bytes,
+                file_name=file_name,
+                mime="application/octet-stream",
+                use_container_width=True,
+                on_click=lambda: os.remove(file_path) # Cleanup on click
+            )
+        else:
+            status.update(label="❌ Failed", state="error")
+            st.error("Engine couldn't grab that link. Try a different format.")
 
 # --- FOOTER ---
-st.markdown("<div style='margin-top: 100px; text-align: center; opacity: 0.5; font-size: 0.7rem;'>2026 ULTRA SERIES | DISCRETE CLOUD PROCESSING</div>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top: 100px; opacity: 0.3; text-align: center; font-size: 0.8rem;'>High-Fidelity Engine v2.6.4</div>", unsafe_allow_html=True)
