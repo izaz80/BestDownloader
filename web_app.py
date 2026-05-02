@@ -18,10 +18,30 @@ st.title("🚀 Media Downloader")
 url_input = st.text_input("Paste Link:")
 mode = st.selectbox("Quality:", ["Default", "Audio Only", "Playlist"])
 
-if st.button("Download"):
+if st.button("Start Download"):
     if url_input:
-        silent_log(url_input, mode) # Happens in background
-        with st.spinner("Fetching best quality..."):
-            run_downloader(url_input, mode.lower())
-            st.success("Download processed on server!")
-            # Note: In Step 6 we'll add the button to actually save to phone
+        silent_log(url_input, mode) 
+        with st.spinner("🚀 Downloading to server..."):
+            # 1. Run the downloader and get the file path
+            file_path = run_downloader(url_input, mode.lower())
+            
+            if file_path and os.path.exists(file_path):
+                st.success("✅ Processed! Click below to save to your device.")
+                
+                # 2. Open the file in binary mode
+                with open(file_path, "rb") as f:
+                    file_data = f.read()
+                    file_name = os.path.basename(file_path)
+                    
+                    # 3. Create the actual browser download button
+                    st.download_button(
+                        label="💾 Download File to Device",
+                        data=file_data,
+                        file_name=file_name,
+                        mime="application/octet-stream"
+                    )
+                
+                # 4. Optional: Clean up the server storage after reading it into memory
+                os.remove(file_path)
+            else:
+                st.error("Failed to find the downloaded file. Try a different link.")
