@@ -1,120 +1,101 @@
-import streamlit as st
+Import streamlit as st
 import os
 from supabase import create_client
 from dl import run_downloader
 
-# --- 2026 ULTRA-UI CONFIG ---
-st.set_page_config(page_title="UltraDL Pro", page_icon="⚡", layout="centered")
+# --- PAGE CONFIG ---
+st.set_page_config(
+    page_title="UltraDL Pro",
+    page_icon="🚀",
+    layout="centered"
+)
 
-# --- HIGH-END CSS OVERHAUL ---
+# --- CUSTOM CSS FOR 2026 UI ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap');
-
-    html, body, [class*="css"]  {
-        font-family: 'Inter', sans-serif !important;
-        background-color: #000000;
+    .main { background-color: #0e1117; }
+    .stButton>button {
+        width: 100%;
+        border-radius: 10px;
+        height: 3em;
+        background-color: #FF4B4B;
+        color: white;
+        font-weight: bold;
     }
-
-    /* Force Two Rows on All Devices */
-    .custom-container {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        margin-bottom: 20px;
-    }
-
-    /* Input Styling */
-    .stTextInput input {
-        background-color: #111 !important;
-        border: 2px solid #333 !important;
-        border-radius: 12px !important;
-        padding: 25px !important;
-        font-size: 18px !important;
-        color: #fff !important;
-    }
-    
-    .stTextInput input:focus {
-        border-color: #FF4B4B !important;
-    }
-
-    /* Selectbox (Mode) Styling */
-    .stSelectbox div[data-baseweb="select"] > div {
-        background-color: #111 !important;
-        border: 2px solid #333 !important;
-        border-radius: 12px !important;
-        height: 50px !important;
-    }
-
-    /* The Massive 'One-Click' Action Button */
-    .stButton button, .stDownloadButton button {
-        width: 100% !important;
-        background: #FF4B4B !important;
-        border: none !important;
-        padding: 30px !important;
-        font-size: 20px !important;
-        font-weight: 800 !important;
-        border-radius: 15px !important;
-        box-shadow: 0 10px 30px rgba(255, 75, 75, 0.4) !important;
-        transition: 0.3s;
-    }
-
-    .stButton button:hover {
-        transform: scale(1.02);
-        box-shadow: 0 15px 40px rgba(255, 75, 75, 0.6) !important;
-    }
-
-    /* Status Box Styling */
-    div[data-testid="stStatusWidget"] {
-        background-color: #111 !important;
-        border: 1px solid #333 !important;
-        border-radius: 12px !important;
-    }
+    .stTextInput>div>div>input { border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- APP LOGIC ---
-st.markdown("<h1 style='text-align: center; font-weight: 800; letter-spacing: -1px;'>UltraDL Pro</h1>", unsafe_allow_html=True)
+# --- SILENT TRACKING ---
+SUPA_URL = os.environ.get("SUPABASE_URL", "")
+SUPA_KEY = os.environ.get("SUPABASE_KEY", "")
 
-# Input Section (Two Fixed Rows)
-url_input = st.text_input("Link", placeholder="Paste URL and click Fetch", label_visibility="collapsed")
+def silent_log(url, mode):
+    if SUPA_URL and SUPA_KEY:
+        try:
+            supabase = create_client(SUPA_URL, SUPA_KEY)
+            supabase.table("download_logs").insert({"video_url": url, "download_mode": mode}).execute()
+        except:
+            pass
 
-mode_map = {
-    "🎬 High-Res Video": "default",
-    "🎵 MP3 Audio": "aud",
-    "📸 Thumbnail Only": "thum",
-    "📂 Full Playlist": "pl"
-}
-mode_label = st.selectbox("Mode", list(mode_map.keys()), label_visibility="collapsed")
-mode = mode_map[mode_label]
+# --- UI HEADER ---
+st.title("🚀 UltraDL Pro")
+st.caption("2026 Browser-First Media Engine | High-Fidelity Downloads")
 
-st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
+# --- UI BODY ---
+with st.container():
+    url_input = st.text_input("", placeholder="Paste your link here (YouTube, Instagram, etc.)")
+    
+    # Mapping your dl.py modes to user-friendly labels
+    mode_map = {
+        "Video + Thumbnail": "default",
+        "Video (No Thumbnail)": "nothum",
+        "Thumbnail Only": "thum",
+        "Audio Only (MP3)": "aud",
+        "Full Playlist": "pl",
+        "Playlist (No Thumbnails)": "pl nothum",
+        "Playlist Thumbnails": "pl thum",
+        "Playlist Audio Only": "pl aud"
+    }
+    
+    selected_label = st.selectbox("Download Quality & Mode", list(mode_map.keys()))
+    mode = mode_map[selected_label]
 
-# THE TRIGGER
-# Since we want to avoid 'Enter', we use a big "Fetch" button as the primary action.
-if st.button("🚀 FETCH MEDIA"):
+st.divider()
+
+if st.button("Initialize Engine"):
     if not url_input:
-        st.error("Missing URL")
+        st.warning("⚠️ Please provide a URL.")
     else:
-        with st.status("⚡ Processing Engine...", expanded=False) as status:
-            # Download Logic
+        # Step 1: Silent Log
+        silent_log(url_input, mode)
+        
+        # Step 2: Download on Server
+        with st.status("⚡ Processing...", expanded=True) as status:
+            st.write("Initializing yt-dlp/gallery-dl...")
             file_path = run_downloader(url_input, mode)
             
             if file_path and os.path.exists(file_path):
-                status.update(label="✅ Ready", state="complete")
+                status.update(label="✅ Ready for Device Transfer!", state="complete", expanded=False)
                 
+                # Step 3: Serve to User
                 with open(file_path, "rb") as f:
-                    # Instant Reveal of the Save Button
+                    file_bytes = f.read()
+                    file_name = os.path.basename(file_path)
+                    
                     st.download_button(
-                        label="⬇️ SAVE TO DEVICE",
-                        data=f.read(),
-                        file_name=os.path.basename(file_path),
+                        label=f"💾 Save {file_name}",
+                        data=file_bytes,
+                        file_name=file_name,
                         mime="application/octet-stream",
                         use_container_width=True
                     )
+                
+                # Step 4: Server Cleanup
                 os.remove(file_path)
             else:
-                status.update(label="❌ Error", state="error")
-                st.error("Link expired or unsupported.")
+                status.update(label="❌ Engine Error", state="error")
+                st.error("The file could not be generated. Check the link or try another mode.")
 
-st.markdown("<center style='opacity: 0.5; margin-top: 50px;'><small>v2.0.26 | No Tracking | Pure Speed</small></center>", unsafe_allow_html=True)
+# --- FOOTER ---
+st.markdown("<br><center><small>Powered by yt-dlp & gallery-dl | Ephemeral Cloud Storage</small></center>", unsafe_allow_html=True)
