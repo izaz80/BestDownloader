@@ -2,6 +2,29 @@ import streamlit as st
 import os
 from supabase import create_client
 from dl import run_downloader
+import streamlit.components.v1 as components
+import base64
+
+# Function to trigger the download automatically via JS
+def trigger_auto_download(file_path):
+    with open(file_path, "rb") as f:
+        data = f.read()
+    
+    b64 = base64.b64encode(data).decode()
+    file_name = os.path.basename(file_path)
+    
+    # JavaScript to create a hidden link and click it automatically
+    js_code = f"""
+        <script>
+        var a = document.createElement('a');
+        a.href = 'data:application/octet-stream;base64,{b64}';
+        a.download = '{file_name}';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        </script>
+    """
+    components.html(js_code, height=0)
 
 # --- PAGE CONFIG ---
 st.set_page_config(
