@@ -1,101 +1,122 @@
 import streamlit as st
 import os
+import time
 from supabase import create_client
 from dl import run_downloader
 
 # --- PAGE CONFIG ---
-st.set_page_config(
-    page_title="UltraDL Pro",
-    page_icon="🚀",
-    layout="centered"
-)
+st.set_page_config(page_title="UltraDL Pro", page_icon="⚡", layout="centered")
 
-# --- CUSTOM CSS FOR 2026 UI ---
+# --- 2026 NEON GLASSMORPHISM UI ---
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; }
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        height: 3em;
-        background-color: #FF4B4B;
-        color: white;
-        font-weight: bold;
+    /* Main Background & Font */
+    .main { background: radial-gradient(circle at top left, #1a1a2e, #0f0f1b); color: #ffffff; }
+    
+    /* Input Styling */
+    .stTextInput>div>div>input {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+        font-size: 1.1rem !important;
     }
-    .stTextInput>div>div>input { border-radius: 10px; }
+
+    /* Modern Selectbox */
+    .stSelectbox [data-baseweb="select"] {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 12px !important;
+    }
+
+    /* THE ONE-CLICK BUTTON */
+    div.stButton > button:first-child {
+        background: linear-gradient(90deg, #FF4B2B 0%, #FF416C 100%);
+        border: none;
+        color: white;
+        padding: 20px;
+        font-size: 20px;
+        font-weight: 700;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(255, 75, 75, 0.3);
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    div.stButton > button:first-child:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 75, 75, 0.5);
+    }
+
+    /* Hide Streamlit Branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- SILENT TRACKING ---
-SUPA_URL = os.environ.get("SUPABASE_URL", "")
-SUPA_KEY = os.environ.get("SUPABASE_KEY", "")
-
+# --- LOGIC ---
 def silent_log(url, mode):
+    SUPA_URL = os.environ.get("SUPABASE_URL", "")
+    SUPA_KEY = os.environ.get("SUPABASE_KEY", "")
     if SUPA_URL and SUPA_KEY:
         try:
             supabase = create_client(SUPA_URL, SUPA_KEY)
             supabase.table("download_logs").insert({"video_url": url, "download_mode": mode}).execute()
-        except:
-            pass
+        except: pass
 
 # --- UI HEADER ---
-st.title("🚀 UltraDL Pro")
-st.caption("2026 Browser-First Media Engine | High-Fidelity Downloads")
+st.markdown("<h1 style='text-align: center; margin-bottom: 0;'>⚡ UltraDL Pro</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #888; font-size: 0.9rem;'>Premium Media Extraction Engine</p>", unsafe_allow_html=True)
+st.write("---")
 
 # --- UI BODY ---
-with st.container():
-    url_input = st.text_input("", placeholder="Paste your link here (YouTube, Instagram, etc.)")
-    
-    # Mapping your dl.py modes to user-friendly labels
+col1, col2 = st.columns([2, 1])
+
+with col1:
+    url_input = st.text_input("Source URL", placeholder="Paste link here...", label_visibility="collapsed")
+
+with col2:
     mode_map = {
-        "Video + Thumbnail": "default",
-        "Video (No Thumbnail)": "nothum",
-        "Thumbnail Only": "thum",
-        "Audio Only (MP3)": "aud",
-        "Full Playlist": "pl",
-        "Playlist (No Thumbnails)": "pl nothum",
-        "Playlist Thumbnails": "pl thum",
-        "Playlist Audio Only": "pl aud"
+        "🎬 Video + Meta": "default",
+        "🎥 Raw Video": "nothum",
+        "🖼️ Thumbnail": "thum",
+        "🎵 MP3 Audio": "aud",
+        "📂 Playlist": "pl"
     }
-    
-    selected_label = st.selectbox("Download Quality & Mode", list(mode_map.keys()))
+    selected_label = st.selectbox("Mode", list(mode_map.keys()), label_visibility="collapsed")
     mode = mode_map[selected_label]
 
-st.divider()
+# Action Space
+main_btn_placeholder = st.empty()
 
-if st.button("Initialize Engine"):
+if main_btn_placeholder.button("⚡ GRAB MEDIA"):
     if not url_input:
-        st.warning("⚠️ Please provide a URL.")
+        st.toast("⚠️ Drop a link first!", icon="🔥")
     else:
-        # Step 1: Silent Log
         silent_log(url_input, mode)
         
-        # Step 2: Download on Server
-        with st.status("⚡ Processing...", expanded=True) as status:
-            st.write("Initializing yt-dlp/gallery-dl...")
+        with st.status("🚀 Teleporting media...", expanded=False) as status:
             file_path = run_downloader(url_input, mode)
             
             if file_path and os.path.exists(file_path):
-                status.update(label="✅ Ready for Device Transfer!", state="complete", expanded=False)
+                status.update(label="✅ Ready!", state="complete")
                 
-                # Step 3: Serve to User
+                # We show the final Save button immediately in place of the old one
                 with open(file_path, "rb") as f:
-                    file_bytes = f.read()
                     file_name = os.path.basename(file_path)
-                    
                     st.download_button(
-                        label=f"💾 Save {file_name}",
-                        data=file_bytes,
+                        label=f"⬇️ SAVE {file_name.upper()}",
+                        data=f.read(),
                         file_name=file_name,
                         mime="application/octet-stream",
-                        use_container_width=True
+                        use_container_width=True,
+                        key="final_dl"
                     )
-                
-                # Step 4: Server Cleanup
                 os.remove(file_path)
             else:
-                status.update(label="❌ Engine Error", state="error")
-                st.error("The file could not be generated. Check the link or try another mode.")
+                status.update(label="❌ Failed", state="error")
+                st.error("Link invalid or server busy.")
 
 # --- FOOTER ---
-st.markdown("<br><center><small>Powered by yt-dlp & gallery-dl | Ephemeral Cloud Storage</small></center>", unsafe_allow_html=True)
+st.markdown("<div style='margin-top: 100px; text-align: center; opacity: 0.5; font-size: 0.7rem;'>2026 ULTRA SERIES | DISCRETE CLOUD PROCESSING</div>", unsafe_allow_html=True)
