@@ -23,5 +23,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 5. Expose the port Streamlit runs on
 EXPOSE 8501
 
-# 6. Command to run the app
-CMD ["streamlit", "run", "web_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Install supervisor to run two processes
+RUN apt-get update && apt-get install -y supervisor && rm -rf /var/lib/apt/lists/*
+
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY test_api.py .
+
+EXPOSE 8501
+EXPOSE 8000
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
