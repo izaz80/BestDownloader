@@ -1,6 +1,5 @@
 yt-dlp
 streamlit
-supabase
 gallery-dl
 fastapi
 uvicorn
