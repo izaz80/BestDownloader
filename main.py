@@ -13,7 +13,7 @@ app = FastAPI(
 # --- Simple in-memory rate limiter ---
 # Stores {ip: [timestamp, timestamp, ...]}
 request_log = defaultdict(list)
-RATE_LIMIT = 20       # max requests
+RATE_LIMIT = 200       # max requests
 RATE_WINDOW = 60 * 60 # per hour
 
 def is_rate_limited(ip: str) -> bool:
